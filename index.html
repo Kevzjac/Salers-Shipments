@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Seguimiento a Embarque de Proyectos | Informe Gerencial</title>
+    <!-- Fuentes modernas y librerías gráficas -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js para gráficos elegantes -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- SheetJS (XLSX) para exportar a Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #eef2f7 0%, #d9e0e8 100%);
+            font-family: 'Inter', sans-serif;
+            padding: 2rem;
+            color: #1a2c3e;
+        }
+
+        /* contenedor principal estilo glassmorphism + sombras */
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(2px);
+            border-radius: 2.5rem;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0,0,0,0.05);
+            overflow: hidden;
+            padding: 2rem 2rem 2.5rem 2rem;
+            transition: all 0.2s;
+        }
+
+        /* encabezado con fecha */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #cbdde9;
+            padding-bottom: 1rem;
+        }
+        .title h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #0b4f6c, #1e7ea5);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+        .title p {
+            color: #2c5a74;
+            font-weight: 500;
+            margin-top: 0.25rem;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .update-badge {
+            background: #1e4663;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            backdrop-filter: blur(2px);
+        }
+        .update-badge i {
+            margin-right: 8px;
+            font-size: 0.9rem;
+        }
+
+        /* tarjetas KPI (media) */
+        .kpi-cards {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+        }
+        .kpi-card {
+            background: white;
+            flex: 1;
+            min-width: 180px;
+            border-radius: 1.5rem;
+            padding: 1.2rem 1rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.03);
+            border: 1px solid rgba(75, 130, 160, 0.2);
+            transition: transform 0.2s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            border-color: #7fa9c2;
+        }
+        .kpi-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #5685a3;
+        }
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #0f4c5f;
+            margin-top: 8px;
+        }
+        .kpi-unit {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #5c7f94;
+        }
+
+        /* sección tabla vendedores + gráficos */
+        .section {
+            background: #ffffffd9;
+            border-radius: 1.8rem;
+            padding: 1.5rem;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            border-left: 5px solid #2494c1;
+            padding-left: 1rem;
+            color: #1a4b6e;
+        }
+        .saler-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: space-between;
+        }
+        .saler-chart-container {
+            flex: 1.2;
+            min-width: 280px;
+            background: #fbfefd;
+            border-radius: 1.5rem;
+            padding: 0.8rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        .saler-table-container {
+            flex: 2;
+            overflow-x: auto;
+        }
+        .mini-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+        .mini-table th {
+            background: #e5f0f7;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            color: #1c5a7a;
+        }
+        .mini-table td {
+            padding: 10px 6px;
+            text-align: center;
+            border-bottom: 1px solid #e2edf2;
+            font-weight: 500;
+        }
+        .highlight-row {
+            background: #f1f9fe;
+            font-weight: 700;
+            color: #005f73;
+        }
+
+        /* segunda tabla: embarques con filtros */
+        .shipment-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+            align-items: center;
+        }
+        .filter-input {
+            background: white;
+            border: 1px solid #bfd7e4;
+            border-radius: 40px;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            outline: none;
+            transition: 0.2s;
+            font-family: 'Inter', monospace;
+        }
+        .filter-input:focus {
+            border-color: #2494c1;
+            box-shadow: 0 0 0 2px #9ac2d9;
+        }
+        .btn-clear {
+            background: #eef2f9;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-clear:hover {
+            background: #d4e2ed;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 1.2rem;
+            background: white;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            min-width: 700px;
+        }
+        .data-table th {
+            background: #1c5a7a;
+            color: white;
+            padding: 12px 10px;
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+        .data-table th i {
+            margin-left: 8px;
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+        .data-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e9f0f4;
+            color: #1f3f4d;
+        }
+        .data-table tr:hover {
+            background: #eef6fc;
+        }
+        .highlight-filter {
+            background-color: #f9eec1;
+            transition: 0.1s;
+        }
+
+        .export-btn {
+            background: linear-gradient(95deg, #1c6d49, #24945c);
+            border: none;
+            padding: 0.8rem 1.8rem;
+            border-radius: 40px;
+            color: white;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            transition: 0.2s;
+            margin-top: 1rem;
+        }
+        .export-btn:hover {
+            transform: scale(1.02);
+            background: linear-gradient(95deg, #155a3b, #1c7e4a);
+        }
+
+        footer {
+            text-align: right;
+            font-size: 0.7rem;
+            color: #6b8da8;
+            margin-top: 2rem;
+            border-top: 1px solid #cfe0ea;
+            padding-top: 1rem;
+        }
+        @media (max-width: 780px) {
+            body { padding: 1rem; }
+            .dashboard { padding: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="header">
+        <div class="title">
+            <h1><i class="fas fa-ship"></i> Seguimiento a Embarque de Proyectos</h1>
+            <p><i class="fas fa-chart-line"></i> Rendimiento Comercial & Logístico · Dashboard Ejecutivo</p>
+        </div>
+        <div class="update-badge">
+            <i class="far fa-calendar-alt"></i> Actualización: 25 marzo 2026
+        </div>
+    </div>
+
+    <!-- Tarjetas resumen media (indicadores generales) -->
+    <div class="kpi-cards" id="kpiCards">
+        <!-- se llena con js desde datos -->
+    </div>
+
+    <!-- SECCIÓN VENDEDORES con gráficos y tabla -->
+    <div class="section">
+        <div class="section-title">
+            <i class="fas fa-user-tie"></i> 
+            <span>Desempeño Comercial · Vendedores (Salers)</span>
+        </div>
+        <div class="saler-grid">
+            <div class="saler-chart-container">
+                <canvas id="radarChartMTTCR" style="max-height: 280px; width:100%"></canvas>
+                <p style="font-size:0.7rem; text-align:center; margin-top:8px;">📊 MTTCR por Vendedor (días)</p>
+            </div>
+            <div class="saler-chart-container">
+                <canvas id="barChartEffectR" style="max-height: 280px; width:100%"></canvas>
+                <p style="font-size:0.7rem; text-align:center; margin-top:8px;">💰 EFFECTR (USD) · Efectos de liberación</p>
+            </div>
+            <div class="saler-table-container">
+                <table class="mini-table">
+                    <thead>
+                        <tr><th>Saler</th><th>MTTCR (días)</th><th>MTTLPu (días)</th><th>EFFECTR (USD)</th></tr>
+                    </thead>
+                    <tbody id="salerTableBody"></tbody>
+                </table>
+                <div style="margin-top:12px; background:#eef3fa; padding:8px; border-radius:16px; text-align:center; font-size:0.75rem;">
+                    <i class="fas fa-chart-simple"></i> <strong>Interpretación:</strong> MTTCR = Tiempo medio a liberación comercial · MTTLPu = Tiempo medio a recogida logística · EFFECTR = Impacto económico liberaciones.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN EMBARQUES con filtros en columnas -->
+    <div class="section">
+        <div class="section-title">
+            <i class="fas fa-boxes"></i>
+            <span>Base de Datos de Embarques (Shipments)</span>
+        </div>
+        <div class="shipment-filters" id="filterContainer">
+            <!-- dinámicamente se generan inputs por cada columna -->
+        </div>
+        <div class="table-wrapper">
+            <table class="data-table" id="shipmentTable">
+                <thead id="shipmentHeader">
+                    <!-- encabezados dinámicos con opción de filtro -->
+                </thead>
+                <tbody id="shipmentBody"></tbody>
+            </table>
+        </div>
+        <button class="export-btn" id="exportExcelBtn"><i class="fas fa-file-excel"></i> Descargar informe a Excel</button>
+        <p style="font-size:0.7rem; margin-top:12px;"><i class="fas fa-info-circle"></i> Haga clic en los encabezados para ordenar. Filtros en tiempo real (resaltan coincidencias).</p>
+    </div>
+    <footer>Informe ejecutivo de seguimiento · Datos estáticos embebidos · Versión gerencial impactante</footer>
+</div>
+
+<script>
+    // --------------------------------------------------------------
+    // DATOS BASE (estructura intuitiva para modificaciones manuales)
+    // --------------------------------------------------------------
+    const SALERS_DATA = [
+        { saler: "VALDIVIESO MERCADO LUCAS DANIEL", MTTCR: 14.94, MTTLPu: 8.17, EFFECTR: 4619139.13 },
+        { saler: "CRISTIAN RIOS MORALES", MTTCR: 28.88, MTTLPu: 2.13, EFFECTR: 2199381.27 },
+        { saler: "ESTEBAN ALEJANDRO CONEO POSADA", MTTCR: 7.10, MTTLPu: 0.20, EFFECTR: 944767.61 },
+        { saler: "RAUL ORAMAS MUÑOZ", MTTCR: 3.00, MTTLPu: 3.60, EFFECTR: 967253.77 },
+        { saler: "COMERCIAL ECUADOR", MTTCR: 1.00, MTTLPu: 1.25, EFFECTR: 1357344.23 },
+        { saler: "THIRIEZ OCHOA PHILIPPE ANDRE MARIE JOSEP", MTTCR: 1.00, MTTLPu: 2.50, EFFECTR: 780322.42 },
+        { saler: "SANTIAGO PIÑA", MTTCR: 5.00, MTTLPu: 0.00, EFFECTR: 218999.67 }
+    ];
+
+    // calcular medias
+    const mediaMTTCR = SALERS_DATA.reduce((sum, s) => sum + s.MTTCR, 0) / SALERS_DATA.length;
+    const mediaMTTLPu = SALERS_DATA.reduce((sum, s) => sum + s.MTTLPu, 0) / SALERS_DATA.length;
+    const mediaEFFECTR = SALERS_DATA.reduce((sum, s) => sum + s.EFFECTR, 0) / SALERS_DATA.length;
+
+    // SHIPMENTS DATA (tal cual la tabla proporcionada)
+    const SHIPMENTS_RAW = [
+        { Shipment:56, Status:"Shipped", CustomerOrder:"COC0000088 SARA GROUP", ProductionReleasing:"26/03/2026", PickupDate:"26/03/2026", CommercialReleasing:"26/03/2026", ConsigneeCountry:"PANAMA" },
+        { Shipment:55, Status:"Shipped", CustomerOrder:"COC0000028 THALLE", ProductionReleasing:"26/03/2026", PickupDate:"26/03/2026", CommercialReleasing:"26/03/2026", ConsigneeCountry:"USA" },
+        { Shipment:54, Status:"Shipped", CustomerOrder:"COC0000035 SOCIEDAD DE ACUEDUCTO ALCANTARILLADO", ProductionReleasing:"26/03/2026", PickupDate:"26/03/2026", CommercialReleasing:"26/03/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:53, Status:"Open", CustomerOrder:"COC0000100 ETEC INTERNATIONAL", ProductionReleasing:"25/03/2026", PickupDate:"", CommercialReleasing:"", ConsigneeCountry:"PANAMA" },
+        { Shipment:52, Status:"Shipped", CustomerOrder:"COC0000089 AGROINDUSTRIAL PALMA ACEITERA", ProductionReleasing:"25/03/2026", PickupDate:"26/03/2026", CommercialReleasing:"25/03/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:51, Status:"Shipped", CustomerOrder:"COC0000062 SOLMEX - GPC", ProductionReleasing:"24/03/2026", PickupDate:"31/03/2026", CommercialReleasing:"26/03/2026", ConsigneeCountry:"PANAMA" },
+        { Shipment:50, Status:"Open", CustomerOrder:"COC0000106 OZONO", ProductionReleasing:"20/03/2026", PickupDate:"20/3/2026", CommercialReleasing:"", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:49, Status:"Shipped", CustomerOrder:"COC0000064 SOLMEX - KISHMAR", ProductionReleasing:"18/03/2026", PickupDate:"", CommercialReleasing:"25/03/2026", ConsigneeCountry:"PANAMA" },
+        { Shipment:48, Status:"Shipped", CustomerOrder:"COC0000049 RYC", ProductionReleasing:"11/03/2026", PickupDate:"13/3/2026", CommercialReleasing:"12/03/2026", ConsigneeCountry:"PANAMA" },
+        { Shipment:47, Status:"Shipped", CustomerOrder:"COC0000099 AQUACULTURA TORRECILLAS S.A.", ProductionReleasing:"11/03/2026", PickupDate:"13/3/2026", CommercialReleasing:"11/03/2026", ConsigneeCountry:"NICARAGUA" },
+        { Shipment:46, Status:"Shipped", CustomerOrder:"COC0000097 GONZALEZ PALMAR EUDO", ProductionReleasing:"11/03/2026", PickupDate:"12/3/2026", CommercialReleasing:"06/03/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:45, Status:"Shipped", CustomerOrder:"COC0000029 THALLE", ProductionReleasing:"10/03/2026", PickupDate:"12/3/2026", CommercialReleasing:"20/02/2026", ConsigneeCountry:"USA" },
+        { Shipment:44, Status:"Shipped", CustomerOrder:"COC0000090 AGRICOLA IBIZA", ProductionReleasing:"27/02/2026", PickupDate:"28/2/2026", CommercialReleasing:"03/03/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:43, Status:"Shipped", CustomerOrder:"COC0000095 FRUTESA", ProductionReleasing:"03/03/2026", PickupDate:"4/3/2026", CommercialReleasing:"03/03/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:42, Status:"Shipped", CustomerOrder:"COC0000096 OCEANOS", ProductionReleasing:"03/03/2026", PickupDate:"3/3/2026", CommercialReleasing:"3/3/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:41, Status:"Shipped", CustomerOrder:"COC0000012 FERME AQUACOLE", ProductionReleasing:"27/02/2026", PickupDate:"5/3/2026", CommercialReleasing:"27/02/2026", ConsigneeCountry:"NEW CALEDONIA" },
+        { Shipment:36, Status:"Shipped", CustomerOrder:"COC0000027 AGUAS DE CIUDAD DEL SUR", ProductionReleasing:"25/02/2026", PickupDate:"26/2/2026", CommercialReleasing:"26/02/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:35, Status:"Shipped", CustomerOrder:"COC0000082 MINEROS ALUVIAL SAS", ProductionReleasing:"23/02/2026", PickupDate:"24/2/2026", CommercialReleasing:"23/02/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:34, Status:"Open", CustomerOrder:"COC0000040 NS3105 PRODALMAR", ProductionReleasing:"20/02/2026", PickupDate:"", CommercialReleasing:"", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:33, Status:"Shipped", CustomerOrder:"COC0000035 TRIPLE A", ProductionReleasing:"19/12/2025", PickupDate:"", CommercialReleasing:"25/02/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:32, Status:"Shipped", CustomerOrder:"COC0000083 PALERMO SOCIEDAD PORTUARIA", ProductionReleasing:"18/02/2026", PickupDate:"13/2/2026", CommercialReleasing:"13/02/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:31, Status:"Shipped", CustomerOrder:"COC0000068 INDUSALCA", ProductionReleasing:"18/02/2026", PickupDate:"23/2/2026", CommercialReleasing:"23/2/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:30, Status:"Shipped", CustomerOrder:"COC0000061 SOLMEX - GENITECH", ProductionReleasing:"17/02/2026", PickupDate:"24/2/2026", CommercialReleasing:"17/2/2026", ConsigneeCountry:"PANAMA" },
+        { Shipment:29, Status:"Shipped", CustomerOrder:"COC0000060 SOLMEX - GENITECH", ProductionReleasing:"16/02/2026", PickupDate:"16/2/2026", CommercialReleasing:"16/2/2026", ConsigneeCountry:"PANAMA" },
+        { Shipment:28, Status:"Shipped", CustomerOrder:"COC0000014 OZONO EMPRESA DE SERVICIOS PUBLICOS S.A.S E.S.P.", ProductionReleasing:"23/12/2025", PickupDate:"23/1/2026", CommercialReleasing:"22/01/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:27, Status:"Shipped", CustomerOrder:"COC0000058 SARA GROUP", ProductionReleasing:"11/02/2026", PickupDate:"18/2/2026", CommercialReleasing:"13/2/2026", ConsigneeCountry:"PANAMA" },
+        { Shipment:26, Status:"Shipped", CustomerOrder:"COC0000052 SOLMEX", ProductionReleasing:"11/02/2026", PickupDate:"23/2/2026", CommercialReleasing:"17/2/2026", ConsigneeCountry:"PANAMA" },
+        { Shipment:25, Status:"Shipped", CustomerOrder:"COC0000072 GRANJAS MARINAS DEL SUR S.A DE CV", ProductionReleasing:"09/02/2026", PickupDate:"31/03/2026", CommercialReleasing:"16/02/2026", ConsigneeCountry:"HONDURAS" },
+        { Shipment:24, Status:"Shipped", CustomerOrder:"COC0000057 NAQUA", ProductionReleasing:"23/01/2026", PickupDate:"9/2/2026", CommercialReleasing:"9/2/2026", ConsigneeCountry:"PANAMA" },
+        { Shipment:23, Status:"Shipped", CustomerOrder:"COC0000056 NAQUA", ProductionReleasing:"23/01/2026", PickupDate:"9/2/2026", CommercialReleasing:"9/2/2026", ConsigneeCountry:"PANAMA" },
+        { Shipment:22, Status:"Shipped", CustomerOrder:"COC0000055 NAQUA", ProductionReleasing:"29/01/2026", PickupDate:"9/2/2026", CommercialReleasing:"29/01/2026", ConsigneeCountry:"PANAMA" },
+        { Shipment:20, Status:"Shipped", CustomerOrder:"COC0000008 FRUTERA DE SANTA MARTA S.A", ProductionReleasing:"03/02/2026", PickupDate:"3/2/2026", CommercialReleasing:"03/02/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:18, Status:"Shipped", CustomerOrder:"COC0000031 EMPACADORA SAN LORENZO", ProductionReleasing:"05/02/2026", PickupDate:"18/2/2026", CommercialReleasing:"16/2/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:17, Status:"Shipped", CustomerOrder:"COC0000054 ETEC ECUADOR - LIMBOMAR", ProductionReleasing:"30/01/2026", PickupDate:"30/1/2026", CommercialReleasing:"30/1/2026", ConsigneeCountry:"ECUADOR" },
+        { Shipment:16, Status:"Shipped", CustomerOrder:"COC0000020 THALLE CONSTRUCTION CO., INC.", ProductionReleasing:"30/12/2025", PickupDate:"12/3/2026", CommercialReleasing:"27/01/2026", ConsigneeCountry:"USA" },
+        { Shipment:14, Status:"Shipped", CustomerOrder:"COC0000024 GUASIMO S.A.S", ProductionReleasing:"23/12/2025", PickupDate:"23/1/2026", CommercialReleasing:"27/1/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:13, Status:"Shipped", CustomerOrder:"COC0000013 GUASIMO S.A.S", ProductionReleasing:"13/11/2025", PickupDate:"30/12/2025", CommercialReleasing:"26/01/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:12, Status:"Shipped", CustomerOrder:"COC0000025 GUASIMO S.A.S", ProductionReleasing:"23/01/2026", PickupDate:"26/1/2026", CommercialReleasing:"26/01/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:11, Status:"Shipped", CustomerOrder:"COC0000046 LUKMAR S.A.", ProductionReleasing:"23/01/2026", PickupDate:"30/1/2026", CommercialReleasing:"26/01/2026", ConsigneeCountry:"PANAMA" },
+        { Shipment:10, Status:"Shipped", CustomerOrder:"COC0000034 MINEROS ALUVIAL S.A.S. BIC", ProductionReleasing:"30/01/2026", PickupDate:"17/2/2026", CommercialReleasing:"16/02/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:9, Status:"Shipped", CustomerOrder:"COC0000021 AGROINDUSTRIAL DE PALMA ACEITERA S.A. SUCURSAL COLOMBIA", ProductionReleasing:"16/12/2025", PickupDate:"6/1/2026", CommercialReleasing:"09/02/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:8, Status:"Shipped", CustomerOrder:"COC0000014 OZONO EMPRESA DE SERVICIOS PUBLICOS S.A.S. E.S.P.", ProductionReleasing:"23/12/2025", PickupDate:"23/1/2026", CommercialReleasing:"22/01/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:7, Status:"Shipped", CustomerOrder:"COC0000026 GONZALEZ PALMAR EUDO ANTONIO", ProductionReleasing:"30/12/2025", PickupDate:"2/1/2026", CommercialReleasing:"02/01/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:6, Status:"Shipped", CustomerOrder:"COC0000032 AQUASERVICIOS S.A. E.S.P.", ProductionReleasing:"26/12/2025", PickupDate:"6/1/2026", CommercialReleasing:"06/01/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:5, Status:"Shipped", CustomerOrder:"COC0000030 AQUASERVICIOS S.A. E.S.P.", ProductionReleasing:"23/12/2025", PickupDate:"6/1/2026", CommercialReleasing:"22/1/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:4, Status:"Shipped", CustomerOrder:"COC0000017 MINEROS ALUVIAL S.A.S. BIC", ProductionReleasing:"22/12/2025", PickupDate:"17/2/2026", CommercialReleasing:"22/1/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:3, Status:"Shipped", CustomerOrder:"COC0000010 MINEROS ALUVIAL S.A.S. BIC", ProductionReleasing:"13/11/2025", PickupDate:"13/11/2025", CommercialReleasing:"22/1/2026", ConsigneeCountry:"COLOMBIA" },
+        { Shipment:2, Status:"Shipped", CustomerOrder:"COC0000022 GREMCA AGRICULTURA Y ENERGIA SOSTENIBLE S.A", ProductionReleasing:"11/12/2025", PickupDate:"16/12/2025", CommercialReleasing:"09/01/2026", ConsigneeCountry:"COLOMBIA" }
+    ];
+
+    // ---------- Render Inicial ----------
+    function renderKPIs() {
+        const container = document.getElementById('kpiCards');
+        container.innerHTML = `
+            <div class="kpi-card"><div class="kpi-label"><i class="fas fa-clock"></i> MTTCR Promedio</div><div class="kpi-value">${mediaMTTCR.toFixed(2)}</div><div class="kpi-unit">días</div></div>
+            <div class="kpi-card"><div class="kpi-label"><i class="fas fa-truck-fast"></i> MTTLPu Promedio</div><div class="kpi-value">${mediaMTTLPu.toFixed(2)}</div><div class="kpi-unit">días</div></div>
+            <div class="kpi-card"><div class="kpi-label"><i class="fas fa-dollar-sign"></i> EFFECTR Promedio</div><div class="kpi-value">$${mediaEFFECTR.toLocaleString('en-US', {minimumFractionDigits:2})}</div><div class="kpi-unit">COP</div></div>
+        `;
+    }
+
+    function renderSalerTable() {
+        const tbody = document.getElementById('salerTableBody');
+        tbody.innerHTML = SALERS_DATA.map(s => `
+            <tr>
+                <td style="text-align:left;">${s.saler}</td>
+                <td>${s.MTTCR.toFixed(2)}</td>
+                <td>${s.MTTLPu.toFixed(2)}</td>
+                <td>$${s.EFFECTR.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+            </tr>
+        `).join('');
+        // agregar fila de media
+        tbody.innerHTML += `<tr class="highlight-row"><td style="text-align:left; font-weight:700;">📊 MEDIA</td><td>${mediaMTTCR.toFixed(2)}</td><td>${mediaMTTLPu.toFixed(2)}</td><td>$${mediaEFFECTR.toLocaleString('en-US',{minimumFractionDigits:2})}</td></tr>`;
+    }
+
+    let mttcrChart, effectrChart;
+    function initCharts() {
+        const ctxRadar = document.getElementById('radarChartMTTCR').getContext('2d');
+        const ctxBar = document.getElementById('barChartEffectR').getContext('2d');
+        const labels = SALERS_DATA.map(s => s.saler.split(' ')[0] + ' ' + (s.saler.split(' ')[1] || ''));
+        if (mttcrChart) mttcrChart.destroy();
+        if (effectrChart) effectrChart.destroy();
+        mttcrChart = new Chart(ctxRadar, {
+            type: 'bar', // barra limpia
+            data: { labels, datasets: [{ label: 'MTTCR (días)', data: SALERS_DATA.map(s=>s.MTTCR), backgroundColor: '#2897c5', borderRadius: 8 }] },
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } } }
+        });
+        effectrChart = new Chart(ctxBar, {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'EFFECTR (USD)', data: SALERS_DATA.map(s=>s.EFFECTR), backgroundColor: '#46b38c' }] },
+            options: { responsive: true, scales: { y: { ticks: { callback: v => '$' + v.toLocaleString() } } } }
+        });
+    }
+
+    // ---------- SHIPMENTS con filtros + resaltado ----------
+    let currentShipments = [...SHIPMENTS_RAW];
+    const columnNames = ["Shipment","Status","CustomerOrder","ProductionReleasing","PickupDate","CommercialReleasing","ConsigneeCountry"];
+    let filterValues = { Shipment:"", Status:"", CustomerOrder:"", ProductionReleasing:"", PickupDate:"", CommercialReleasing:"", ConsigneeCountry:"" };
+    let sortConfig = { key: null, direction: 'asc' };
+
+    function renderShipmentTable() {
+        let filtered = currentShipments.filter(row => {
+            return columnNames.every(col => {
+                const filterText = filterValues[col].toString().toLowerCase();
+                if (!filterText) return true;
+                const cellVal = (row[col] || "").toString().toLowerCase();
+                return cellVal.includes(filterText);
+            });
+        });
+        if (sortConfig.key) {
+            filtered.sort((a,b) => {
+                let aVal = a[sortConfig.key] ?? "";
+                let bVal = b[sortConfig.key] ?? "";
+                if (sortConfig.key === "Shipment") { aVal=Number(aVal); bVal=Number(bVal); }
+                if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        const tbody = document.getElementById('shipmentBody');
+        tbody.innerHTML = filtered.map(row => {
+            let rowClass = '';
+            const anyMatch = columnNames.some(col => filterValues[col] && (row[col]||"").toString().toLowerCase().includes(filterValues[col].toLowerCase()));
+            if (anyMatch) rowClass = 'highlight-filter';
+            return `<tr class="${rowClass}">${columnNames.map(col => `<td>${row[col] !== undefined ? row[col] : ''}</td>`).join('')}</tr>`;
+        }).join('');
+    }
+
+    function buildFilters() {
+        const container = document.getElementById('filterContainer');
+        container.innerHTML = columnNames.map(col => `
+            <input type="text" class="filter-input" data-column="${col}" placeholder="🔍 Filtrar ${col}" value="${filterValues[col]}">
+        `).join('') + `<button class="btn-clear" id="clearFiltersBtn"><i class="fas fa-eraser"></i> Limpiar filtros</button>`;
+        document.querySelectorAll('.filter-input').forEach(inp => {
+            inp.addEventListener('input', (e) => {
+                filterValues[e.target.dataset.column] = e.target.value;
+                renderShipmentTable();
+            });
+        });
+        document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+            columnNames.forEach(c => filterValues[c] = "");
+            document.querySelectorAll('.filter-input').forEach(inp => inp.value = "");
+            renderShipmentTable();
+        });
+    }
+
+    function initShipmentSorting() {
+        const headers = document.querySelectorAll('#shipmentHeader th');
+        headers.forEach((th, idx) => {
+            th.addEventListener('click', () => {
+                const key = columnNames[idx];
+                if (sortConfig.key === key) sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+                else { sortConfig.key = key; sortConfig.direction = 'asc'; }
+                renderShipmentTable();
+                updateSortIcons();
+            });
+        });
+    }
+    function updateSortIcons() {
+        document.querySelectorAll('#shipmentHeader th i').forEach(icon => icon.remove());
+        const idx = columnNames.findIndex(c => c === sortConfig.key);
+        if(idx !== -1){
+            const th = document.querySelectorAll('#shipmentHeader th')[idx];
+            const icon = document.createElement('i');
+            icon.className = `fas fa-sort-${sortConfig.direction === 'asc' ? 'up' : 'down'}`;
+            th.appendChild(icon);
+        }
+    }
+
+    function renderShipmentHeader() {
+        const thead = document.getElementById('shipmentHeader');
+        thead.innerHTML = `<tr>${columnNames.map(col => `<th>${col} <i class="fas fa-filter" style="font-size:0.7rem;"></i></th>`).join('')}</tr>`;
+        initShipmentSorting();
+    }
+
+    // exportar a Excel
+    function exportToExcel() {
+        let filteredData = currentShipments.filter(row => {
+            return columnNames.every(col => {
+                const filterText = filterValues[col].toString().toLowerCase();
+                if (!filterText) return true;
+                return (row[col] || "").toString().toLowerCase().includes(filterText);
+            });
+        });
+        const salersSheet = SALERS_DATA.map(s => ({ Saler: s.saler, MTTCR: s.MTTCR, MTTLPu: s.MTTLPu, EFFECTR: s.EFFECTR }));
+        const ws1 = XLSX.utils.json_to_sheet(salersSheet);
+        const ws2 = XLSX.utils.json_to_sheet(filteredData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws1, "Desempeño_Vendedores");
+        XLSX.utils.book_append_sheet(wb, ws2, "Embarques_Filtrados");
+        XLSX.writeFile(wb, `Informe_Embarques_${new Date().toISOString().slice(0,19)}.xlsx`);
+    }
+
+    // ejecutar todo
+    renderKPIs();
+    renderSalerTable();
+    initCharts();
+    renderShipmentHeader();
+    buildFilters();
+    renderShipmentTable();
+    document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
+</script>
+</body>
+</html>
