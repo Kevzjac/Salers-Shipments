@@ -322,12 +322,12 @@
             </div>
             <div class="saler-chart-container">
                 <canvas id="barChartEffectR" style="max-height: 280px; width:100%"></canvas>
-                <p style="font-size:0.7rem; text-align:center; margin-top:8px;">💰 EFFECTR (USD) · Efectos de liberación</p>
+                <p style="font-size:0.7rem; text-align:center; margin-top:8px;">💰 EFFECTR (COP) · Efectos de liberación</p>
             </div>
             <div class="saler-table-container">
                 <table class="mini-table">
                     <thead>
-                        <tr><th>Saler</th><th>MTTCR (días)</th><th>MTTLPu (días)</th><th>EFFECTR (USD)</th></tr>
+                        <tr><th>Saler</th><th>MTTCR (días)</th><th>MTTLPu (días)</th><th>EFFECTR (COP)</th></tr>
                     </thead>
                     <tbody id="salerTableBody"></tbody>
                 </table>
@@ -470,7 +470,7 @@
         });
         effectrChart = new Chart(ctxBar, {
             type: 'bar',
-            data: { labels, datasets: [{ label: 'EFFECTR (USD)', data: SALERS_DATA.map(s=>s.EFFECTR), backgroundColor: '#46b38c' }] },
+            data: { labels, datasets: [{ label: 'EFFECTR (COP)', data: SALERS_DATA.map(s=>s.EFFECTR), backgroundColor: '#46b38c' }] },
             options: { responsive: true, scales: { y: { ticks: { callback: v => '$' + v.toLocaleString() } } } }
         });
     }
